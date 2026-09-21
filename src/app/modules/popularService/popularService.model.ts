@@ -1,0 +1,53 @@
+import { Schema, model } from 'mongoose';
+import { IPopularService, PopularServiceModel } from './popularService.interface';
+
+const popularServiceSchema = new Schema<IPopularService, PopularServiceModel>(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    price: {
+      type: Number,
+      required: true,
+    },
+    billing_period: {
+      type: String,
+      enum: ['monthly', 'yearly'],
+      required: true,
+    },
+    currency: {
+      type: String,
+      required: true,
+      default: 'SEK',
+    },
+    category: {
+      type: Schema.Types.ObjectId,
+      ref: 'SubscriptionCategory',
+      required: true,
+    },
+    logo: {
+      type: String,
+    },
+    description: {
+      type: String,
+    },
+  },
+  {
+    timestamps: true,
+    toJSON: {
+      virtuals: true,
+      transform: (doc, ret: Record<string, unknown>) => {
+        delete ret._id;
+        delete ret.__v;
+        return ret;
+      },
+    },
+  }
+);
+
+export const PopularService = model<IPopularService, PopularServiceModel>(
+  'PopularService',
+  popularServiceSchema
+);
