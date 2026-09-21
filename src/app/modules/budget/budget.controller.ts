@@ -11,8 +11,12 @@ const getDashboard = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     statusCode: 200,
     success: true,
-    message: 'Budget dashboard fetched successfully',
-    data: result,
+    message: 'Budget dashboard retrieved successfully',
+    data: {
+      summary: result.summary,
+      savings_goal: result.savings_goal,
+      breakdown: result.breakdown,
+    },
   });
 });
 

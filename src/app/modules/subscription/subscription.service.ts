@@ -1,4 +1,5 @@
 import ApiError from '../../../errors/ApiError';
+import { getFallbackSubscriptionInfo } from '../../../helpers/subscriptionDefaults';
 import { ISubscription } from './subscription.interface';
 import { Subscription } from './subscription.model';
 
@@ -19,7 +20,20 @@ const getDashboard = async (userId: string) => {
   let totalPerMonth = 0;
   let totalPerYear = 0;
 
-  subscriptions.forEach((sub) => {
+  for (const sub of subscriptions) {
+    // Auto-heal any 0-priced subscriptions
+    if (!sub.price || sub.price <= 0) {
+      const fallback = getFallbackSubscriptionInfo(sub.name);
+      sub.price = fallback.price;
+      if (!sub.category || sub.category === 'General') {
+        sub.category = fallback.category;
+      }
+      await Subscription.findByIdAndUpdate(sub._id, {
+        price: sub.price,
+        category: sub.category,
+      });
+    }
+
     if (sub.billing_period === 'monthly') {
       totalPerMonth += sub.price;
       totalPerYear += sub.price * 12;
@@ -27,7 +41,7 @@ const getDashboard = async (userId: string) => {
       totalPerMonth += sub.price / 12;
       totalPerYear += sub.price;
     }
-  });
+  }
 
   const currency = subscriptions.length > 0 ? subscriptions[0].currency : 'SEK';
 
@@ -62,6 +76,21 @@ const getAllSubscriptions = async (
     .skip(skip)
     .limit(limit);
 
+  // Auto-heal any 0-priced subscriptions in response list
+  for (const sub of items) {
+    if (!sub.price || sub.price <= 0) {
+      const fallback = getFallbackSubscriptionInfo(sub.name);
+      sub.price = fallback.price;
+      if (!sub.category || sub.category === 'General') {
+        sub.category = fallback.category;
+      }
+      await Subscription.findByIdAndUpdate(sub._id, {
+        price: sub.price,
+        category: sub.category,
+      });
+    }
+  }
+
   const total = await Subscription.countDocuments(filter);
   const totalPages = Math.ceil(total / limit);
 
@@ -80,13 +109,22 @@ const createSubscription = async (
   userId: string,
   payload: ISubscriptionPayload
 ): Promise<ISubscription> => {
-  const { category, category_id, ...rest } = payload;
-  const finalCategory = category || category_id || 'General';
+  const { category, category_id, name, price, billing_period, currency, ...rest } = payload;
+  const fallback = getFallbackSubscriptionInfo(name);
+
+  const finalPrice = typeof price === 'number' && price > 0 ? price : fallback.price;
+  const finalCategory = category || category_id || fallback.category || 'General';
+  const finalBillingPeriod = billing_period || fallback.billing_period || 'monthly';
+  const finalCurrency = currency || 'SEK';
 
   const newSub = await Subscription.create({
     ...rest,
-    user: userId,
+    name,
+    price: finalPrice,
+    billing_period: finalBillingPeriod,
+    currency: finalCurrency,
     category: finalCategory,
+    user: userId,
   });
 
   const result = await Subscription.findById(newSub._id);
@@ -104,6 +142,14 @@ const getSubscriptionById = async (
   if (!result) {
     throw new ApiError(404, 'Subscription not found');
   }
+
+  // Auto-heal if price is 0
+  if (!result.price || result.price <= 0) {
+    const fallback = getFallbackSubscriptionInfo(result.name);
+    result.price = fallback.price;
+    await Subscription.findByIdAndUpdate(result._id, { price: result.price });
+  }
+
   return result;
 };
 

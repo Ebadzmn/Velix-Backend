@@ -52,12 +52,17 @@ This API is used during the user **Onboarding flow** to collect questionnaire an
 |---|---|---|---|
 | `monthlySalary` | `number` | **Yes** | User's primary monthly salary / wage. |
 | `otherIncome` | `number` | No (default: 0) | Any side income, freelance, investments, etc. |
-| `subscriptions` | `Array<string>` | No (default: []) | List of active subscription services/names. |
+| `subscriptions` | `Array<string \| object>` | No (default: []) | List of active subscription services/names (e.g. `["Netflix", "Spotify"]` or `[{"name": "Netflix", "price": 129, "billing_period": "monthly"}]`). **Automatically synced into the user's Subscription collection!** |
 | `fixedCosts` | `Array<FixedCost>` | No (default: []) | Array of fixed monthly expenses. |
 | `fixedCosts[].category` | `string` | **Yes** (if fixedCost item provided) | Name/category of the cost (e.g. Rent, Bills, Insurance). |
 | `fixedCosts[].amount` | `number` | **Yes** (if fixedCost item provided) | Cost amount. |
 | `monthlySavings` | `number` | **Yes** | Target amount the user plans to save each month. |
-| `savingsGoal` | `string` | **Yes** | Description/name of the savings target/goal. |
+| `savingsGoal` | `string` | **Yes** | Description/name of the savings target/goal. **Automatically creates an initial active Savings Goal!** |
+
+> **Note on Subscription Synchronization:**
+> When subscriptions are provided during onboarding:
+> 1. The backend automatically matches names against `PopularService` to fetch default pricing, billing period, and category.
+> 2. Creates corresponding records in the user's `Subscription` collection so they immediately appear on `/api/v1/subscriptions`, the Home dashboard, and Budget calculations.
 
 ---
 

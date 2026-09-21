@@ -199,7 +199,20 @@ const getHomeDashboard = async (
     subscriptions,
     fixed_costs,
     savings_goals,
-    summary: budgetDashboard.summary,
+    summary: {
+      income: budgetDashboard.summary.income,
+      fixed_expenses: budgetDashboard.summary.fixed_expenses,
+      subscriptions: budgetDashboard.summary.subscriptions,
+      variable_costs: budgetDashboard.summary.variable_costs,
+      total_expenses: budgetDashboard.summary.total_expenses,
+      money_left: budgetDashboard.summary.money_left,
+      savings_allocated: finProfile?.monthlySavings || 0,
+      available_to_spend: Math.max(
+        0,
+        budgetDashboard.summary.money_left - (finProfile?.monthlySavings || 0)
+      ),
+      safe_to_spend_today: budgetDashboard.summary.safe_to_spend_today,
+    },
     economic_health: {
       score: economicHealthScore,
       max_score: insightsData.financial_health.max_score,
