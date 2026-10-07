@@ -5,7 +5,7 @@ import { NotificationService } from './notification.service';
 
 const getNotificationPreferences = catchAsync(
   async (req: Request, res: Response) => {
-    const userId = req.user?.userId;
+    const userId = req.user?.userId as string;
     const result = await NotificationService.getNotificationPreferences(userId);
 
     sendResponse(res, {
@@ -19,7 +19,7 @@ const getNotificationPreferences = catchAsync(
 
 const updateNotificationPreferences = catchAsync(
   async (req: Request, res: Response) => {
-    const userId = req.user?.userId;
+    const userId = req.user?.userId as string;
     const result = await NotificationService.updateNotificationPreferences(
       userId,
       req.body
@@ -36,7 +36,7 @@ const updateNotificationPreferences = catchAsync(
 
 const registerDeviceToken = catchAsync(
   async (req: Request, res: Response) => {
-    const userId = req.user?.userId;
+    const userId = req.user?.userId as string;
     const result = await NotificationService.registerDeviceToken(
       userId,
       req.body
@@ -53,7 +53,7 @@ const registerDeviceToken = catchAsync(
 
 const getAllNotifications = catchAsync(
   async (req: Request, res: Response) => {
-    const userId = req.user?.userId;
+    const userId = req.user?.userId as string;
     const result = await NotificationService.getAllNotifications(
       userId,
       req.query
@@ -71,8 +71,8 @@ const getAllNotifications = catchAsync(
 
 const markAsRead = catchAsync(
   async (req: Request, res: Response) => {
-    const userId = req.user?.userId;
-    const { id } = req.params;
+    const userId = req.user?.userId as string;
+    const id = req.params.id as string;
     const result = await NotificationService.markAsRead(userId, id);
 
     sendResponse(res, {
@@ -86,7 +86,7 @@ const markAsRead = catchAsync(
 
 const markAllAsRead = catchAsync(
   async (req: Request, res: Response) => {
-    const userId = req.user?.userId;
+    const userId = req.user?.userId as string;
     const result = await NotificationService.markAllAsRead(userId);
 
     sendResponse(res, {
@@ -100,8 +100,8 @@ const markAllAsRead = catchAsync(
 
 const deleteNotification = catchAsync(
   async (req: Request, res: Response) => {
-    const userId = req.user?.userId;
-    const { id } = req.params;
+    const userId = req.user?.userId as string;
+    const id = req.params.id as string;
     const result = await NotificationService.deleteNotification(userId, id);
 
     sendResponse(res, {
