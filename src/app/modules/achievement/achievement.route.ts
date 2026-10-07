@@ -11,4 +11,10 @@ router.get(
   AchievementController.getAchievements
 );
 
+router.post(
+  '/streak/heartbeat',
+  auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+  AchievementController.recordStreakHeartbeat
+);
+
 export const AchievementRoutes = router;

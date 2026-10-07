@@ -32,7 +32,7 @@ const getAllSavingsGoals = async (
         name: finProfile.savingsGoal,
         target_amount: targetAmount,
         saved_amount: 0,
-        currency: user?.currency || 'SEK',
+        currency: user?.currency || 'KR',
         is_active: true,
       });
       items = [initialGoal];

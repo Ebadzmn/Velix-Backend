@@ -60,7 +60,8 @@ const getDashboard = async (
     totalAmount += tx.amount;
   });
 
-  const currency = transactions.length > 0 && transactions[0].currency ? transactions[0].currency : 'SEK';
+  const user = await Cost.db.model('User').findById(userId);
+  const currency = transactions.length > 0 && transactions[0].currency ? transactions[0].currency : (user?.currency || 'KR');
 
   return {
     summary: {
@@ -123,6 +124,7 @@ const createCost = async (
   const title = payload.title || payload.name || 'Expense';
   const category = payload.category || payload.category_id || 'Other';
   const date = payload.date ? new Date(payload.date) : new Date();
+  const user = await Cost.db.model('User').findById(userId);
 
   const newCost = await Cost.create({
     user: userId,
@@ -131,7 +133,7 @@ const createCost = async (
     category,
     date,
     note: payload.note || '',
-    currency: payload.currency || 'SEK',
+    currency: payload.currency || user?.currency || 'KR',
   });
 
   const result = await Cost.findById(newCost._id);

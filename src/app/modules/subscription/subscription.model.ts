@@ -25,7 +25,7 @@ const subscriptionSchema = new Schema<ISubscription, SubscriptionModel>(
     currency: {
       type: String,
       required: true,
-      default: 'SEK',
+      default: 'KR',
     },
     category: {
       type: String,

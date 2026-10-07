@@ -60,7 +60,7 @@ const getDashboard = async (
       FixedExpense.find({ user: userId }),
     ]);
 
-  const currency = user?.currency || 'SEK';
+  const currency = user?.currency || 'KR';
 
   // 2. Calculate Income
   let income = 0;
@@ -141,8 +141,18 @@ const getDashboard = async (
   }));
 
   // 6. Calculate Totals & Summary Metrics
+  // Deduct current saved amount across savings goals from available money left
+  const allSavingsGoals = await SavingsGoal.find({ user: userId });
+  let total_saved_amount = 0;
+  allSavingsGoals.forEach((sg) => {
+    total_saved_amount += sg.saved_amount || 0;
+  });
+  if (total_saved_amount === 0 && activeSavingsGoal) {
+    total_saved_amount = activeSavingsGoal.saved_amount || 0;
+  }
+
   const total_expenses = Number(
-    (fixed_expenses + subscriptions + variable_costs).toFixed(2)
+    (fixed_expenses + subscriptions + variable_costs + total_saved_amount).toFixed(2)
   );
   const money_left = Math.max(0, Number((income - total_expenses).toFixed(2)));
   const safe_to_spend_today =

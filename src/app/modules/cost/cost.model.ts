@@ -21,7 +21,7 @@ const costSchema = new Schema<ICost, CostModel>(
     currency: {
       type: String,
       required: true,
-      default: 'SEK',
+      default: 'KR',
       trim: true,
     },
     category: {

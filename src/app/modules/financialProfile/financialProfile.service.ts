@@ -13,7 +13,7 @@ const createOrUpdateProfile = async (
   payload: IFinancialProfile
 ): Promise<IFinancialProfile> => {
   const user = await User.findById(userId);
-  const defaultCurrency = user?.currency || 'SEK';
+  const defaultCurrency = user?.currency || 'KR';
 
   // 1. Process and synchronize subscriptions to Subscription collection
   const subscriptionNames: string[] = [];

@@ -75,7 +75,7 @@ const getHomeDashboard = async (
       FinancialProfile.findOne({ user: userId }),
     ]);
 
-  const currency = user?.currency || budgetDashboard.currency || 'SEK';
+  const currency = user?.currency || budgetDashboard.currency || 'KR';
   const now = new Date();
 
   // 1. Format Subscriptions & Compute Next Billing Dates

@@ -1,6 +1,7 @@
 import express from 'express';
 import { AchievementController } from '../app/modules/achievement/achievement.controller';
 import { AchievementRoutes } from '../app/modules/achievement/achievement.route';
+import { AppleSubscriptionRoutes } from '../app/modules/appleSubscription/appleSubscription.route';
 import { AuthRoutes } from '../app/modules/auth/auth.route';
 import { BudgetRoutes } from '../app/modules/budget/budget.route';
 import { CostRoutes } from '../app/modules/cost/cost.route';
@@ -10,6 +11,7 @@ import { FixedExpenseRoutes } from '../app/modules/fixedExpense/fixedExpense.rou
 import { HomeRoutes } from '../app/modules/home/home.route';
 import { IncomeRoutes } from '../app/modules/income/income.route';
 import { InsightRoutes } from '../app/modules/insight/insight.route';
+import { NotificationRoutes } from '../app/modules/notification/notification.route';
 import { PopularServiceRoutes } from '../app/modules/popularService/popularService.route';
 import { ProfileRoutes } from '../app/modules/profile/profile.route';
 import { SavingsGoalRoutes } from '../app/modules/savingsGoal/savingsGoal.route';
@@ -22,6 +24,10 @@ import auth from '../app/middlewares/auth';
 const router = express.Router();
 
 const moduleRoutes = [
+  {
+    path: '/apple-subscription',
+    route: AppleSubscriptionRoutes,
+  },
   {
     path: '/auth',
     route: AuthRoutes,
@@ -97,6 +103,14 @@ const moduleRoutes = [
   {
     path: '/insights',
     route: InsightRoutes,
+  },
+  {
+    path: '/smart-insights',
+    route: InsightRoutes,
+  },
+  {
+    path: '/notifications',
+    route: NotificationRoutes,
   },
 ];
 

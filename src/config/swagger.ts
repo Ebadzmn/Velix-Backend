@@ -217,16 +217,25 @@ const options: swaggerJSDoc.Options = {
       '/achievements': {
         get: {
           tags: ['Profile & Gamification'],
-          summary: 'Get list of achievements (optional filter status=unlocked or locked)',
+          summary: 'Get full achievements dashboard with streak, health, summary, unlocked and locked badges',
           security: [{ bearerAuth: [] }],
           parameters: [
             {
               name: 'status',
               in: 'query',
               schema: { type: 'string', enum: ['unlocked', 'locked'] },
+              description: 'Optional filter by unlocked or locked items',
             },
           ],
-          responses: { 200: { description: 'Achievements retrieved' } },
+          responses: { 200: { description: 'Achievements retrieved successfully' } },
+        },
+      },
+      '/achievements/streak/heartbeat': {
+        post: {
+          tags: ['Profile & Gamification'],
+          summary: 'Record daily activity / streak keeper heartbeat',
+          security: [{ bearerAuth: [] }],
+          responses: { 200: { description: 'Streak updated successfully' } },
         },
       },
       '/financial-health': {

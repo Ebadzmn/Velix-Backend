@@ -26,7 +26,7 @@ const savingsGoalSchema = new Schema<ISavingsGoal, SavingsGoalModel>(
     },
     currency: {
       type: String,
-      default: 'SEK',
+      default: 'KR',
     },
     is_active: {
       type: Boolean,

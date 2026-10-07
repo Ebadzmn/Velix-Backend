@@ -6,8 +6,18 @@ import { AchievementService } from './achievement.service';
 const getAchievements = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user?.userId;
   const statusFilter = req.query.status as string;
-  const result = await AchievementService.getAchievementsList(userId, statusFilter);
 
+  if (statusFilter) {
+    const result = await AchievementService.getAchievementsList(userId, statusFilter);
+    return sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: 'Achievements retrieved successfully',
+      data: result,
+    });
+  }
+
+  const result = await AchievementService.getAchievementsDashboard(userId);
   sendResponse(res, {
     statusCode: 200,
     success: true,
@@ -33,7 +43,20 @@ const getFinancialHealth = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const recordStreakHeartbeat = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user?.userId;
+  const result = await AchievementService.recordStreakHeartbeat(userId);
+
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Streak updated successfully',
+    data: result,
+  });
+});
+
 export const AchievementController = {
   getAchievements,
   getFinancialHealth,
+  recordStreakHeartbeat,
 };

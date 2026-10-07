@@ -228,6 +228,15 @@ const getInsights = async (userId: string, targetMonth?: string) => {
   // Sort insights by priority
   smartInsights.sort((a, b) => a.priority - b.priority);
 
+  // Quick Metric Stats for Insights Page
+  const yearlySubTotal = Number((subscriptionTotalMonthly * 12).toFixed(2));
+  const quickMetricStats = {
+    subscription_count: subscriptionsList.length,
+    yearly_subscription_cost: yearlySubTotal,
+    yearly_subscription_cost_formatted: `${yearlySubTotal.toLocaleString()} ${currency}`,
+    subscription_income_percentage: Number(subRatio.toFixed(2)),
+  };
+
   return {
     period: budgetDashboard.period,
     currency,
@@ -239,21 +248,33 @@ const getInsights = async (userId: string, targetMonth?: string) => {
     },
     points_breakdown: {
       savings: {
+        title: 'Savings quota',
+        description: 'Percentage of income allocated towards savings and goals',
         score: savingsScore,
         max_score: 30,
         percentage: Number(((savingsScore / 30) * 100).toFixed(2)),
       },
       subscription_control: {
+        title: 'Subscription control',
+        description: 'Subscription spending efficiency relative to income',
         score: subscriptionScore,
         max_score: 25,
         percentage: Number(((subscriptionScore / 25) * 100).toFixed(2)),
         subscription_income_ratio: Number(subRatio.toFixed(2)),
       },
       budget_control: {
+        title: 'Budget control',
+        description: 'Remaining budget and adherence to spending limits',
         score: budgetScore,
         max_score: 45,
         percentage: Number(((budgetScore / 45) * 100).toFixed(2)),
       },
+    },
+    quick_metric_stats: quickMetricStats,
+    ai_coach: {
+      action: 'chat',
+      screen: 'ai_coach_screen',
+      suggested_prompt: `I have an economic health score of ${totalHealthScore}/100 with status "${status}". My subscriptions cost ${yearlySubTotal} ${currency}/year (${subRatio.toFixed(1)}% of my income). How can I optimize my budget?`,
     },
     smart_insights: smartInsights,
   };

@@ -60,6 +60,17 @@ const updateProfile = async (userId: string, payload: Partial<any>) => {
   if (!user) {
     throw new ApiError(404, 'User not found');
   }
+
+  // If currency was updated, cascade to subscriptions, costs, savings goals, etc.
+  if (payload.currency) {
+    await Promise.all([
+      User.db.model('Subscription').updateMany({ user: userId }, { currency: payload.currency }),
+      User.db.model('Cost').updateMany({ user: userId }, { currency: payload.currency }),
+      User.db.model('SavingsGoal').updateMany({ user: userId }, { currency: payload.currency }),
+      User.db.model('FixedExpense').updateMany({ user: userId }, { currency: payload.currency }),
+    ]);
+  }
+
   return user;
 };
 

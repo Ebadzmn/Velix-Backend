@@ -12,6 +12,10 @@ const createUser = async (payload: IUser): Promise<{ user: IUser; token: string 
     throw new ApiError(400, 'User already exists with this email');
   }
 
+  if (!payload.currency || payload.currency.trim() === '') {
+    payload.currency = 'KR';
+  }
+
   const result = await User.create(payload);
 
   const token = jwtHelper.createToken(

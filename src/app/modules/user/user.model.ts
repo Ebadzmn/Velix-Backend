@@ -37,7 +37,7 @@ const userSchema = new Schema<IUser, UserModel>(
     },
     currency: {
       type: String,
-      default: '',
+      default: 'KR',
     },
     role: {
       type: String,
@@ -55,6 +55,18 @@ const userSchema = new Schema<IUser, UserModel>(
     },
     profileImage: {
       type: String,
+    },
+    isPremium: {
+      type: Boolean,
+      default: false,
+    },
+    premiumPlan: {
+      type: String,
+      default: '',
+    },
+    subscriptionExpiresAt: {
+      type: Date,
+      default: null,
     },
   },
   {

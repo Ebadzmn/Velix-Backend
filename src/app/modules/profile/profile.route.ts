@@ -1,6 +1,7 @@
 import express from 'express';
 import { ENUM_USER_ROLE } from '../../../enums/user';
 import auth from '../../middlewares/auth';
+import { AchievementController } from '../achievement/achievement.controller';
 import { ProfileController } from './profile.controller';
 
 const router = express.Router();
@@ -9,6 +10,12 @@ router.get(
   '/dashboard',
   auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
   ProfileController.getDashboard
+);
+
+router.get(
+  '/achievements',
+  auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+  AchievementController.getAchievements
 );
 
 router.get(

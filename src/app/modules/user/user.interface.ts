@@ -15,6 +15,9 @@ export type IUser = {
   status: 'active' | 'blocked';
   isFinancialProfileCompleted?: boolean;
   profileImage?: string;
+  isPremium?: boolean;
+  premiumPlan?: string;
+  subscriptionExpiresAt?: Date | null;
 };
 
 export type UserModel = {

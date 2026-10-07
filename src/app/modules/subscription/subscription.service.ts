@@ -43,7 +43,8 @@ const getDashboard = async (userId: string) => {
     }
   }
 
-  const currency = subscriptions.length > 0 ? subscriptions[0].currency : 'SEK';
+  const user = await Subscription.db.model('User').findById(userId);
+  const currency = subscriptions.length > 0 ? subscriptions[0].currency : (user?.currency || 'KR');
 
   return {
     summary: {
