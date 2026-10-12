@@ -40,8 +40,20 @@ const restorePurchases = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// App Store Server Notifications V2 Webhook handler
+const handleWebhook = catchAsync(async (req: Request, res: Response) => {
+  const result = await AppleSubscriptionService.handleServerNotification(req.body);
+
+  // Apple expects immediate 200 OK
+  res.status(200).json({
+    success: true,
+    data: result,
+  });
+});
+
 export const AppleSubscriptionController = {
   verifySubscription,
   getSubscriptionStatus,
   restorePurchases,
+  handleWebhook,
 };

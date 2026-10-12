@@ -23,4 +23,10 @@ router.post(
   AppleSubscriptionController.restorePurchases
 );
 
+// App Store Server Notifications V2 Webhook (Called by Apple directly)
+router.post(
+  '/webhook',
+  AppleSubscriptionController.handleWebhook
+);
+
 export const AppleSubscriptionRoutes = router;
