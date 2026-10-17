@@ -5,6 +5,7 @@ import app from './app';
 import config from './config';
 import { connectDB } from './DB/serverConnection';
 import { seedAdmin } from './DB/seedAdmin';
+import { initializeFirebaseAdmin } from './config/firebaseAdmin';
 import { socketHelper } from './helpers/socketHelper';
 import { errorLogger, logger } from './shared/logger';
 
@@ -34,6 +35,7 @@ async function main() {
   try {
     await connectDB();
     await seedAdmin();
+    initializeFirebaseAdmin();
 
     const networkIp = getNetworkIP();
     const port = Number(config.port) || 5000;

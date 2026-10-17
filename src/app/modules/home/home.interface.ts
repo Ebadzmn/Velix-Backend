@@ -66,6 +66,7 @@ export interface IHomeDashboardResponse {
     variable_costs: number;
     total_expenses: number;
     money_left: number;
+    monthly_savings?: number;
     savings_allocated: number;
     available_to_spend: number;
     safe_to_spend_today: number;

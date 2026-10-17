@@ -34,6 +34,10 @@ const fileUploadHandler = (folderName = 'images') => {
   ) => {
     const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
     if (allowedMimeTypes.includes(file.mimetype)) {
+      if (file.fieldname === 'profileImage' && file.mimetype === 'application/pdf') {
+        cb(new ApiError(400, 'Profile image must be a JPEG or PNG image'));
+        return;
+      }
       cb(null, true);
     } else {
       cb(new ApiError(400, 'Only .jpeg, .png, .jpg and .pdf format allowed!'));

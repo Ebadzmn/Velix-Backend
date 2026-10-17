@@ -3,6 +3,7 @@ export interface IBudgetSummary {
   fixed_expenses: number;
   subscriptions: number;
   variable_costs: number;
+  monthly_savings: number;
   total_expenses: number;
   money_left: number;
   safe_to_spend_today: number;

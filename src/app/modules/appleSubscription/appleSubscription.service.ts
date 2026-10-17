@@ -21,7 +21,10 @@ const getAppleClient = () => {
   const issuerId = process.env.APPLE_ISSUER_ID;
   const keyId = process.env.APPLE_KEY_ID;
   const bundleId = process.env.APPLE_BUNDLE_ID || 'com.velix.app';
-  const privateKey = process.env.APPLE_PRIVATE_KEY; // Base64 or raw string of .p8 key
+  let privateKey = process.env.APPLE_PRIVATE_KEY; // Base64 or raw string of .p8 key
+  if (privateKey && privateKey.includes('\\n')) {
+    privateKey = privateKey.replace(/\\n/g, '\n');
+  }
 
   if (issuerId && keyId && privateKey) {
     const isProduction = process.env.APPLE_ENVIRONMENT === 'Production';
@@ -33,7 +36,7 @@ const getAppleClient = () => {
 
 // Production + Sandbox Apple StoreKit Verification Service
 const verifySubscription = async (userId: string, payload: IVerifyPayload) => {
-  const {
+  let {
     transactionId,
     productId,
     receiptData,
@@ -43,13 +46,14 @@ const verifySubscription = async (userId: string, payload: IVerifyPayload) => {
     throw new ApiError(400, 'transactionId and productId are required');
   }
 
-  const origTxId = payload.originalTransactionId || transactionId;
+  let origTxId = payload.originalTransactionId || transactionId;
   const now = new Date();
   let purchaseDate = payload.purchaseDate ? new Date(payload.purchaseDate) : now;
   if (isNaN(purchaseDate.getTime())) purchaseDate = now;
 
-  let expiresDate: Date;
+  let expiresDate: Date | null = null;
   let verifiedByAppleApi = false;
+  let decodedTx: any = null;
 
   // 1. If Apple Server API Client is configured, query Apple Server API directly
   const appleClient = getAppleClient();
@@ -58,23 +62,45 @@ const verifySubscription = async (userId: string, payload: IVerifyPayload) => {
       const response = await appleClient.getTransactionInfo(transactionId);
       if (response && response.signedTransactionInfo) {
         verifiedByAppleApi = true;
+        const parts = response.signedTransactionInfo.split('.');
+        if (parts.length >= 2) {
+          decodedTx = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
+        }
       }
     } catch (appleErr: any) {
-      console.warn('Apple Server API query failed, falling back to local validation:', appleErr?.message);
+      console.warn('Apple Server API query failed:', appleErr?.message);
     }
   }
 
-  // Expiry calculation
-  if (payload.expiresDate) {
-    expiresDate = new Date(payload.expiresDate);
-    if (isNaN(expiresDate.getTime())) {
+  // Security: In production, verify with Apple App Store is strictly enforced
+  const isProduction = process.env.APPLE_ENVIRONMENT === 'Production';
+  if (isProduction && !verifiedByAppleApi) {
+    throw new ApiError(400, 'Unable to verify subscription with Apple App Store Server. Please try again.');
+  }
+
+  // If decoded authoritative data from Apple is available, use it
+  if (decodedTx) {
+    if (decodedTx.originalTransactionId) origTxId = decodedTx.originalTransactionId;
+    if (decodedTx.productId) productId = decodedTx.productId;
+    if (decodedTx.purchaseDate) purchaseDate = new Date(decodedTx.purchaseDate);
+    if (decodedTx.expiresDate) {
+      expiresDate = new Date(decodedTx.expiresDate);
+    }
+  }
+
+  // Expiry calculation fallback if not retrieved from signed payload
+  if (!expiresDate) {
+    if (payload.expiresDate) {
+      expiresDate = new Date(payload.expiresDate);
+      if (isNaN(expiresDate.getTime())) {
+        expiresDate = new Date(purchaseDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+      }
+    } else if (productId.toLowerCase().includes('year') || productId.toLowerCase().includes('annual')) {
+      expiresDate = new Date(purchaseDate.getTime() + 365 * 24 * 60 * 60 * 1000);
+    } else {
+      // Default 30 days monthly
       expiresDate = new Date(purchaseDate.getTime() + 30 * 24 * 60 * 60 * 1000);
     }
-  } else if (productId.toLowerCase().includes('year') || productId.toLowerCase().includes('annual')) {
-    expiresDate = new Date(purchaseDate.getTime() + 365 * 24 * 60 * 60 * 1000);
-  } else {
-    // Default 30 days monthly
-    expiresDate = new Date(purchaseDate.getTime() + 30 * 24 * 60 * 60 * 1000);
   }
 
   const isExpired = expiresDate.getTime() < Date.now();
@@ -94,9 +120,14 @@ const verifySubscription = async (userId: string, payload: IVerifyPayload) => {
       expiresDate,
       isAutoRenew: true,
       rawResponse: {
-        verifiedVia: verifiedByAppleApi ? 'AppleAppStoreServerAPI' : 'StoreKit2Verification',
+        verifiedVia: verifiedByAppleApi ? 'AppleAppStoreServerAPI' : 'StoreKitSandboxVerification',
         receiptDataPreview: receiptData ? receiptData.substring(0, 50) + '...' : undefined,
         verifiedAt: new Date().toISOString(),
+        decodedTxPreview: decodedTx ? {
+          transactionId: decodedTx.transactionId,
+          productId: decodedTx.productId,
+          environment: decodedTx.environment,
+        } : undefined,
       },
     },
     { upsert: true, new: true, setDefaultsOnInsert: true }
@@ -186,22 +217,44 @@ const restorePurchases = async (userId: string, originalTransactionId: string) =
 
   const now = new Date();
 
+  // If not found in DB, try querying Apple Server API if configured
   if (!existingSubscription) {
-    const defaultExpiry = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-    existingSubscription = await AppleSubscription.create({
-      user: userId,
-      originalTransactionId,
-      latestTransactionId: originalTransactionId,
-      productId: 'velix_premium_monthly',
-      environment: process.env.APPLE_ENVIRONMENT || 'Sandbox',
-      status: 'ACTIVE',
-      purchaseDate: now,
-      expiresDate: defaultExpiry,
-      isAutoRenew: true,
-      rawResponse: {
-        restoredAt: now.toISOString(),
-      },
-    });
+    const appleClient = getAppleClient();
+    if (appleClient) {
+      try {
+        const response = await appleClient.getTransactionInfo(originalTransactionId);
+        if (response && response.signedTransactionInfo) {
+          const parts = response.signedTransactionInfo.split('.');
+          if (parts.length >= 2) {
+            const txData = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
+            const txExpiry = txData.expiresDate ? new Date(txData.expiresDate) : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+            const isExp = txExpiry.getTime() < now.getTime();
+
+            existingSubscription = await AppleSubscription.create({
+              user: userId,
+              originalTransactionId: txData.originalTransactionId || originalTransactionId,
+              latestTransactionId: txData.transactionId || originalTransactionId,
+              productId: txData.productId || 'app.getvelix.monthly',
+              environment: (process.env.APPLE_ENVIRONMENT as any) || 'Sandbox',
+              status: isExp ? 'EXPIRED' : 'ACTIVE',
+              purchaseDate: txData.purchaseDate ? new Date(txData.purchaseDate) : now,
+              expiresDate: txExpiry,
+              isAutoRenew: true,
+              rawResponse: {
+                restoredAt: now.toISOString(),
+                verifiedVia: 'AppleServerApiOnRestore',
+              },
+            });
+          }
+        }
+      } catch (err: any) {
+        console.warn('Apple restore verification error:', err?.message);
+      }
+    }
+  }
+
+  if (!existingSubscription) {
+    throw new ApiError(404, 'No active Apple subscription found to restore for this transaction ID');
   } else {
     existingSubscription.user = userId as any;
     await existingSubscription.save();

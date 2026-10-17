@@ -1,3 +1,4 @@
+import { sendPushToUser, sendPushToDevice } from '../../../config/firebaseAdmin';
 import ApiError from '../../../errors/ApiError';
 import {
   IDeviceToken,
@@ -9,6 +10,49 @@ import {
   Notification,
   NotificationPreference,
 } from './notification.model';
+
+type GeneratedNotification = Pick<INotification, 'title' | 'message' | 'type' | 'data'>;
+
+const createNotificationIfEnabled = async (
+  userId: string,
+  preferenceKey: keyof INotificationPreference,
+  notification: GeneratedNotification,
+  dedupeKey: string
+) => {
+  const preferences = await getNotificationPreferences(userId);
+  if (preferences[preferenceKey] !== true) return null;
+
+  const existing = await Notification.findOne({
+    user: userId,
+    type: notification.type,
+    'data.dedupeKey': dedupeKey,
+  });
+  if (existing) return existing;
+
+  const createdNotification = await Notification.create({
+    ...notification,
+    user: userId,
+    isRead: false,
+    data: { ...notification.data, dedupeKey },
+  });
+
+  // Dispatch real-time push notification via Firebase Admin SDK
+  void sendPushToUser(userId, {
+    title: notification.title,
+    body: notification.message,
+    data: {
+      type: notification.type,
+      notificationId: createdNotification._id.toString(),
+      ...(notification.data
+        ? Object.fromEntries(
+            Object.entries(notification.data).map(([k, v]) => [k, String(v)])
+          )
+        : {}),
+    },
+  }).catch(() => {});
+
+  return createdNotification;
+};
 
 // 1. Get User Notification Preferences (creates default if not exist)
 const getNotificationPreferences = async (
@@ -142,6 +186,7 @@ const deleteNotification = async (userId: string, notificationId: string) => {
 };
 
 export const NotificationService = {
+  createNotificationIfEnabled,
   getNotificationPreferences,
   updateNotificationPreferences,
   registerDeviceToken,
@@ -149,4 +194,6 @@ export const NotificationService = {
   markAsRead,
   markAllAsRead,
   deleteNotification,
+  sendPushToUser,
+  sendPushToDevice,
 };

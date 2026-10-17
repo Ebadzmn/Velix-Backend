@@ -6,6 +6,7 @@ import { SavingsGoal } from '../savingsGoal/savingsGoal.model';
 import { Subscription } from '../subscription/subscription.model';
 import { getFallbackSubscriptionInfo } from '../../../helpers/subscriptionDefaults';
 import { User } from '../user/user.model';
+import { NotificationService } from '../notification/notification.service';
 import {
   IBudgetDashboardResponse,
   IFixedCostBreakdown,
@@ -141,6 +142,8 @@ const getDashboard = async (
   }));
 
   // 6. Calculate Totals & Summary Metrics
+  const monthlySavingsTarget = finProfile?.monthlySavings || 0;
+
   // Deduct current saved amount across savings goals from available money left
   const allSavingsGoals = await SavingsGoal.find({ user: userId });
   let total_saved_amount = 0;
@@ -151,8 +154,11 @@ const getDashboard = async (
     total_saved_amount = activeSavingsGoal.saved_amount || 0;
   }
 
+  // Monthly savings allocated for budgeting is the planned monthly savings target (or actual saved amount if higher)
+  const monthlySavingsAllocated = Math.max(monthlySavingsTarget, total_saved_amount);
+
   const total_expenses = Number(
-    (fixed_expenses + subscriptions + variable_costs + total_saved_amount).toFixed(2)
+    (fixed_expenses + subscriptions + variable_costs + monthlySavingsAllocated).toFixed(2)
   );
   const money_left = Math.max(0, Number((income - total_expenses).toFixed(2)));
   const safe_to_spend_today =
@@ -162,10 +168,23 @@ const getDashboard = async (
     ? Number((total_expenses - income).toFixed(2))
     : 0;
 
+  if (is_overspent) {
+    void NotificationService.createNotificationIfEnabled(
+      userId,
+      'budgetAlerts',
+      {
+        title: 'Budget exceeded',
+        message: `You are over your monthly budget by ${overspent_amount} ${currency}.`,
+        type: 'budget_alert',
+        data: { month: monthStr, amount: overspent_amount, currency },
+      },
+      `budget-over-${monthStr}`
+    ).catch(() => {});
+  }
+
   // 7. Calculate Savings Goal
   const savingsTitle =
     activeSavingsGoal?.name || finProfile?.savingsGoal || 'Savings Goal';
-  const monthlySavingsTarget = finProfile?.monthlySavings || 0;
   let targetAmount = activeSavingsGoal?.target_amount || 0;
   if (targetAmount <= 0) {
     targetAmount = monthlySavingsTarget > 0 ? monthlySavingsTarget * 10 : 10000;
@@ -210,6 +229,7 @@ const getDashboard = async (
       fixed_expenses,
       subscriptions,
       variable_costs,
+      monthly_savings: monthlySavingsAllocated,
       total_expenses,
       money_left,
       safe_to_spend_today,

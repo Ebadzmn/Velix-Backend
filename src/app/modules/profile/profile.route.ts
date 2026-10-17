@@ -1,6 +1,7 @@
 import express from 'express';
 import { ENUM_USER_ROLE } from '../../../enums/user';
 import auth from '../../middlewares/auth';
+import fileUploadHandler from '../../middlewares/fileUploadHandler';
 import { AchievementController } from '../achievement/achievement.controller';
 import { ProfileController } from './profile.controller';
 
@@ -27,6 +28,7 @@ router.get(
 router.patch(
   '/me',
   auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+  fileUploadHandler('images').single('profileImage'),
   ProfileController.updateProfile
 );
 

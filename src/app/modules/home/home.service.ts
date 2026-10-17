@@ -5,6 +5,7 @@ import { InsightService } from '../insight/insight.service';
 import { SavingsGoal } from '../savingsGoal/savingsGoal.model';
 import { Subscription } from '../subscription/subscription.model';
 import { User } from '../user/user.model';
+import { NotificationService } from '../notification/notification.service';
 import {
   IHomeDashboardResponse,
   IHomeFixedCostItem,
@@ -103,6 +104,20 @@ const getHomeDashboard = async (
       };
     }
 
+    if (daysUntil <= 3) {
+      void NotificationService.createNotificationIfEnabled(
+        userId,
+        'renewalReminders',
+        {
+          title: `${sub.name} renews soon`,
+          message: `${sub.name} (${sub.price} ${sub.currency || currency}) is due in ${daysUntil} day${daysUntil === 1 ? '' : 's'}.`,
+          type: 'renewal',
+          data: { subscriptionId: sub._id?.toString(), daysUntil, billingDate: formattedDate },
+        },
+        `renewal-${sub._id?.toString()}-${formattedDate}`
+      ).catch(() => {});
+    }
+
     return {
       id: sub._id?.toString(),
       name: sub.name,
@@ -145,6 +160,26 @@ const getHomeDashboard = async (
     const target = sg.target_amount || 1;
     const saved = sg.saved_amount || 0;
     const progress = Math.min(100, Math.round((saved / target) * 100));
+
+    if (sg.is_active && sg.target_date && saved < target) {
+      const daysUntilTarget = Math.ceil(
+        (new Date(sg.target_date).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) /
+          (1000 * 60 * 60 * 24)
+      );
+      if (daysUntilTarget >= 0 && daysUntilTarget <= 7) {
+        void NotificationService.createNotificationIfEnabled(
+          userId,
+          'savingsReminders',
+          {
+            title: `${sg.name} goal is coming up`,
+            message: `${sg.name} is due in ${daysUntilTarget} day${daysUntilTarget === 1 ? '' : 's'}. You have saved ${saved} of ${target} ${sg.currency || currency}.`,
+            type: 'savings_goal',
+            data: { savingsGoalId: sg._id?.toString(), daysUntil: daysUntilTarget },
+          },
+          `savings-goal-${sg._id?.toString()}-${new Date(sg.target_date).toISOString().slice(0, 10)}`
+        ).catch(() => {});
+      }
+    }
 
     return {
       id: sg._id?.toString(),
@@ -206,11 +241,9 @@ const getHomeDashboard = async (
       variable_costs: budgetDashboard.summary.variable_costs,
       total_expenses: budgetDashboard.summary.total_expenses,
       money_left: budgetDashboard.summary.money_left,
-      savings_allocated: finProfile?.monthlySavings || 0,
-      available_to_spend: Math.max(
-        0,
-        budgetDashboard.summary.money_left - (finProfile?.monthlySavings || 0)
-      ),
+      monthly_savings: budgetDashboard.summary.monthly_savings || finProfile?.monthlySavings || 0,
+      savings_allocated: budgetDashboard.summary.monthly_savings || finProfile?.monthlySavings || 0,
+      available_to_spend: budgetDashboard.summary.money_left,
       safe_to_spend_today: budgetDashboard.summary.safe_to_spend_today,
     },
     economic_health: {

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
+import getFilePath from '../../../shared/getFilePath';
 import { ProfileService } from './profile.service';
 
 const getDashboard = catchAsync(async (req: Request, res: Response) => {
@@ -29,7 +30,11 @@ const getMyProfile = catchAsync(async (req: Request, res: Response) => {
 
 const updateProfile = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user?.userId;
-  const result = await ProfileService.updateProfile(userId, req.body);
+  const payload = { ...req.body };
+  if (req.file) {
+    payload.profileImage = getFilePath(req, 'images');
+  }
+  const result = await ProfileService.updateProfile(userId, payload);
 
   sendResponse(res, {
     statusCode: 200,

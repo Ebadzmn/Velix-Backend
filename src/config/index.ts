@@ -25,4 +25,9 @@ export default {
     pass: process.env.EMAIL_PASS,
     from: process.env.EMAIL_FROM,
   },
+  firebase: {
+    service_account_path:
+      process.env.FIREBASE_SERVICE_ACCOUNT_PATH ||
+      'velix-f3831-firebase-adminsdk-fbsvc-5cff15e870.json',
+  },
 };
