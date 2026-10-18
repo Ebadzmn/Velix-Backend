@@ -54,4 +54,10 @@ router.delete(
   NotificationController.deleteNotification
 );
 
+router.post(
+  '/test-push',
+  auth(ENUM_USER_ROLE.USER, ENUM_USER_ROLE.ADMIN, ENUM_USER_ROLE.SUPER_ADMIN),
+  NotificationController.sendTestNotification
+);
+
 export const NotificationRoutes = router;

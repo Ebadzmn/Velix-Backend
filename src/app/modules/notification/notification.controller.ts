@@ -113,6 +113,30 @@ const deleteNotification = catchAsync(
   }
 );
 
+const sendTestNotification = catchAsync(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.userId as string;
+    const result = await NotificationService.createNotificationIfEnabled(
+      userId,
+      'renewalReminders',
+      {
+        title: 'Velix Push Test 🔔',
+        message: 'Your push notifications are working perfectly on Velix!',
+        type: 'system',
+        data: { test: 'true', timestamp: new Date().toISOString() },
+      },
+      `test-push-${Date.now()}`
+    );
+
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: 'Test push notification triggered successfully',
+      data: result,
+    });
+  }
+);
+
 export const NotificationController = {
   getNotificationPreferences,
   updateNotificationPreferences,
@@ -121,4 +145,5 @@ export const NotificationController = {
   markAsRead,
   markAllAsRead,
   deleteNotification,
+  sendTestNotification,
 };

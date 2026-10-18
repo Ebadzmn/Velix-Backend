@@ -37,7 +37,7 @@ const createNotificationIfEnabled = async (
   });
 
   // Dispatch real-time push notification via Firebase Admin SDK
-  void sendPushToUser(userId, {
+  sendPushToUser(userId, {
     title: notification.title,
     body: notification.message,
     data: {
@@ -49,7 +49,15 @@ const createNotificationIfEnabled = async (
           )
         : {}),
     },
-  }).catch(() => {});
+  })
+    .then((result) => {
+      // eslint-disable-next-line no-console
+      console.log(`[PUSH] Dispatched to user ${userId}: success=${result.successCount}, failure=${result.failureCount}`);
+    })
+    .catch((err) => {
+      // eslint-disable-next-line no-console
+      console.error(`[PUSH ERROR] Failed to dispatch push to user ${userId}:`, err);
+    });
 
   return createdNotification;
 };
