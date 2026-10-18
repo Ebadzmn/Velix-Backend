@@ -6,6 +6,7 @@ import config from './config';
 import { connectDB } from './DB/serverConnection';
 import { seedAdmin } from './DB/seedAdmin';
 import { initializeFirebaseAdmin } from './config/firebaseAdmin';
+import { startReminderScheduler } from './app/jobs/subscriptionReminderJob';
 import { socketHelper } from './helpers/socketHelper';
 import { errorLogger, logger } from './shared/logger';
 
@@ -36,6 +37,7 @@ async function main() {
     await connectDB();
     await seedAdmin();
     initializeFirebaseAdmin();
+    startReminderScheduler();
 
     const networkIp = getNetworkIP();
     const port = Number(config.port) || 5000;

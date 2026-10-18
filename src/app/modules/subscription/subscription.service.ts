@@ -2,6 +2,7 @@ import ApiError from '../../../errors/ApiError';
 import { getFallbackSubscriptionInfo } from '../../../helpers/subscriptionDefaults';
 import { ISubscription } from './subscription.interface';
 import { Subscription } from './subscription.model';
+import { NotificationService } from '../notification/notification.service';
 
 type ISubscriptionPayload = {
   name: string;
@@ -132,6 +133,28 @@ const createSubscription = async (
   if (!result) {
     throw new ApiError(400, 'Failed to create subscription');
   }
+
+  // Dispatch real-time push notification and in-app alert when subscription is added
+  void NotificationService.createNotificationIfEnabled(
+    userId,
+    'renewalReminders',
+    {
+      title: `${name} Added 🔔`,
+      message: `${name} (${finalPrice} ${finalCurrency}/${finalBillingPeriod}) has been added to your subscriptions.`,
+      type: 'renewal',
+      data: {
+        subscriptionId: newSub._id.toString(),
+        name,
+        price: String(finalPrice),
+        action: 'subscription_created',
+      },
+    },
+    `created-${newSub._id.toString()}`
+  ).catch((err) => {
+    // eslint-disable-next-line no-console
+    console.error('Failed to dispatch notification on subscription creation:', err);
+  });
+
   return result;
 };
 
