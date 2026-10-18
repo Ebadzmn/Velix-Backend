@@ -43,15 +43,31 @@ export const initializeFirebaseAdmin = (): App | null => {
   }
 
   try {
-    const serviceAccountPath = resolveServiceAccountPath();
+    let serviceAccount: any = null;
 
-    if (!serviceAccountPath) {
-      logger.warn('⚠️ Firebase Admin SDK: Service account JSON file not found. Push notifications will be disabled.');
-      return null;
+    // 1. Priority: Load from Base64 Environment Variable (Best Practice for Production/Cloud)
+    if (config.firebase.service_account_base64) {
+      try {
+        const decodedJson = Buffer.from(config.firebase.service_account_base64, 'base64').toString('utf8');
+        serviceAccount = JSON.parse(decodedJson);
+        logger.info('🔑 Firebase service account successfully decoded from Base64 environment variable.');
+      } catch (err) {
+        errorLogger.error(`Failed to parse FIREBASE_SERVICE_ACCOUNT_BASE64: ${err instanceof Error ? err.message : String(err)}`);
+      }
     }
 
-    const fileContent = fs.readFileSync(serviceAccountPath, 'utf8');
-    const serviceAccount = JSON.parse(fileContent);
+    // 2. Fallback: Load from local JSON file
+    if (!serviceAccount) {
+      const serviceAccountPath = resolveServiceAccountPath();
+
+      if (!serviceAccountPath) {
+        logger.warn('⚠️ Firebase Admin SDK: Service account JSON file or Base64 not found. Push notifications will be disabled.');
+        return null;
+      }
+
+      const fileContent = fs.readFileSync(serviceAccountPath, 'utf8');
+      serviceAccount = JSON.parse(fileContent);
+    }
 
     firebaseApp = initializeApp({
       credential: cert(serviceAccount),

@@ -29,5 +29,7 @@ export default {
     service_account_path:
       process.env.FIREBASE_SERVICE_ACCOUNT_PATH ||
       'velix-f3831-firebase-adminsdk-fbsvc-5cff15e870.json',
+    service_account_base64: process.env.FIREBASE_SERVICE_ACCOUNT_BASE64,
   },
 };
+
